@@ -1443,6 +1443,7 @@ libgtk_3_la_SOURCES = $(gtk_c_sources)
 libgtk_3_la_LDFLAGS = $(libtool_opts)
 libgtk_3_la_LIBADD = $(libadd)
 libgtk_3_la_DEPENDENCIES = $(deps)
+libgtk_3_la_DEPENDENCIES += $(gtk_deps)
 
 if USE_WIN32
 libgtk_3_la_LIBADD += -lole32 -lgdi32 -lcomdlg32 -lwinspool -lcomctl32

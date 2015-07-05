@@ -22,8 +22,8 @@
               <object class="GtkBox">
                 <property name="visible">1</property>
                 <child>
-                  <object class="GtkImage" id="icon_widget">
-                    <property name="visible">1</property>
+                  <object class="GtkImage" id="left_icon_widget">
+                    <property name="visible">True</property>
                     <style>
                       <class name="sidebar-icon"/>
                     </style>
@@ -38,6 +38,21 @@
                       <class name="sidebar-label"/>
                     </style>
                   </object>
+                </child>
+                <child>
+                  <object class="GtkImage" id="right_icon_widget">
+                    <property name="visible">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="halign">end</property>
+                    <property name="valign">center</property>
+                    <style>
+                      <class name="sidebar-icon"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">0</property>
+                  </packing>
                 </child>
                 <child>
                   <object class="GtkButton" id="eject_button">
@@ -58,6 +73,10 @@
                       <class name="sidebar-button"/>
                     </style>
                   </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">0</property>
+                  </packing>
                 </child>
               </object>
             </child>
@@ -66,4 +85,14 @@
       </object>
     </child>
   </template>
+  <!-- We need it to not make the row smaller when the eject button is hidden -->
+  <object class="GtkSizeGroup">
+    <property name="mode">vertical</property>
+    <widgets>
+      <widget name="eject_button"/>
+      <widget name="label_widget"/>
+      <widget name="left_icon_widget"/>
+      <widget name="right_icon_widget"/>
+    </widgets>
+  </object>
 </interface>

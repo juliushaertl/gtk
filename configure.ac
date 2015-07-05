@@ -64,6 +64,7 @@ m4_define([wayland_protocols_required_version], [1.9])
 m4_define([mirclient_required_version], [0.22.0])
 m4_define([mircookie_required_version], [0.17.0])
 m4_define([epoxy_required_version], [1.0])
+m4_define([cloudproviders_required_version], [1.0])
 GLIB_REQUIRED_VERSION=glib_required_version
 PANGO_REQUIRED_VERSION=pango_required_version
 ATK_REQUIRED_VERSION=atk_required_version
@@ -580,6 +581,7 @@ PKG_CHECK_MODULES(BASE_DEPENDENCIES,
    pango >= pango_required_version dnl
    cairo >= cairo_required_version dnl
    cairo-gobject >= cairo_required_version dnl
+   cloudproviders >= clodproviders_required_version dnl
    gdk-pixbuf-2.0 >= gdk_pixbuf_required_version])
 
 PKG_CHECK_MODULES(CAIRO_BACKEND, [$cairo_backends])
@@ -1344,7 +1346,7 @@ fi
 CFLAGS="$saved_cflags"
 LDFLAGS="$saved_ldflags"
 
-GDK_PACKAGES="$PANGO_PACKAGES gdk-pixbuf-2.0 >= gdk_pixbuf_required_version cairo >= cairo_required_version cairo-gobject >= cairo_required_version"
+GDK_PACKAGES="$PANGO_PACKAGES gdk-pixbuf-2.0 >= gdk_pixbuf_required_version cairo >= cairo_required_version cairo-gobject >= cairo_required_version cloudproviders >= cloudproviders_required_version"
 GDK_PRIVATE_PACKAGES="$GDK_GIO_PACKAGE $X_PACKAGES $WAYLAND_PACKAGES $MIR_PACKAGES $cairo_backends epoxy >= epoxy_required_version"
 
 PKG_CHECK_MODULES(GDK_DEP, $GDK_PACKAGES $GDK_PRIVATE_PACKAGES)
