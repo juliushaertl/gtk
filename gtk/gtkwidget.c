@@ -5544,8 +5544,8 @@ gtk_widget_size_allocate_with_baseline (GtkWidget     *widget,
 
   /* Since gtk_widget_measure does it for us, we can be sure here that
    * the given alloaction is large enough for the css margin/bordder/padding */
-  real_allocation.x = margin.left + border.left + padding.left;
-  real_allocation.y = margin.top + border.top + padding.top;
+  real_allocation.x = 0;
+  real_allocation.y = 0;
   real_allocation.width -= margin.left + border.left + padding.left +
                            margin.right + border.right + padding.right;
   real_allocation.height -= margin.top + border.top + padding.top +
@@ -15548,7 +15548,10 @@ gtk_widget_snapshot (GtkWidget   *widget,
       if (opacity < 1.0)
         gtk_snapshot_push_opacity (snapshot, opacity, "Opacity<%s,%f>", G_OBJECT_TYPE_NAME (widget), opacity);
 
+      /* Offset to content allocation */
+      gtk_snapshot_offset (snapshot, margin.left + padding.left + border.left, margin.top + border.top + padding.top);
       klass->snapshot (widget, snapshot);
+      gtk_snapshot_offset (snapshot, - (margin.left + padding.left + border.left), -(margin.top + border.top + padding.top));
 
       if (g_signal_has_handler_pending (widget, widget_signals[DRAW], 0, FALSE))
         {
@@ -15821,16 +15824,19 @@ gtk_widget_snapshot_child (GtkWidget   *widget,
                            GtkWidget   *child,
                            GtkSnapshot *snapshot)
 {
-  GtkAllocation child_allocation;
+  GtkAllocation content_allocation;
+  int x, y;
 
   g_return_if_fail (_gtk_widget_get_parent (child) == widget);
   g_return_if_fail (snapshot != NULL);
 
-  gtk_widget_get_allocation (child, &child_allocation);
+  gtk_widget_get_allocation (child, &content_allocation);
+  x = content_allocation.x;
+  y = content_allocation.y;
 
-  gtk_snapshot_offset (snapshot, child_allocation.x, child_allocation.y);
+  gtk_snapshot_offset (snapshot, x, y);
   gtk_widget_snapshot (child, snapshot);
-  gtk_snapshot_offset (snapshot, -child_allocation.x, -child_allocation.y);
+  gtk_snapshot_offset (snapshot, -x, -y);
 }
 
 void
