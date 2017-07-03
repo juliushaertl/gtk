@@ -909,6 +909,39 @@ update_trash_icon (GtkPlacesSidebar *sidebar)
 }
 
 static void
+update_cloud_row_data(CloudProvider *cloud_provider,
+                      GtkWidget *cloud_row)
+{
+  GIcon *right_icon;
+  gint provider_status;
+  provider_status = cloud_provider_get_status (cloud_provider);
+      switch (provider_status)
+        {
+        case CLOUD_PROVIDER_STATUS_IDLE:
+          right_icon = NULL;
+          break;
+
+        case CLOUD_PROVIDER_STATUS_SYNCING:
+          right_icon = g_themed_icon_new ("emblem-synchronizing-symbolic");
+          break;
+
+        case CLOUD_PROVIDER_STATUS_ERROR:
+          right_icon = g_themed_icon_new ("dialog-warning-symbolic");
+          break;
+
+        default:
+          return;
+        }
+  gtk_sidebar_row_set_right_icon(GTK_SIDEBAR_ROW(cloud_row), right_icon);
+  if(right_icon != NULL)
+    g_object_unref(right_icon);
+  g_object_set (cloud_row,
+                "label", cloud_provider_get_name(cloud_provider),
+                NULL);
+
+}
+
+static void
 update_places (GtkPlacesSidebar *sidebar)
 {
   GList *mounts, *l, *ll;
@@ -1059,15 +1092,21 @@ update_places (GtkPlacesSidebar *sidebar)
 
       tooltip = g_strdup_printf ("Open %s", name);
 
-      add_place (sidebar, PLACES_BUILT_IN,
-                 SECTION_CLOUD,
-                 name, left_icon, right_icon, mount_uri,
-                 NULL, NULL, NULL, l->data, 0,
-                 tooltip);
+      GtkWidget *cloud_row = NULL;
+      cloud_row = add_place (sidebar, PLACES_BUILT_IN,
+                               SECTION_CLOUD,
+                               name, left_icon, right_icon, mount_uri,
+                               NULL, NULL, NULL, l->data, 0,
+                               tooltip);
 
-      if (right_icon)
-        g_object_unref (right_icon);
-      //g_object_unref (left_icon);
+      // FIXME: store handler_ids in list for each instance of gtkplacessidebar
+      // otherwise it will just work on the newest one
+      guint number = g_signal_handlers_disconnect_matched (l->data,
+                                            G_SIGNAL_MATCH_FUNC,
+                                            0, 0, 0, update_cloud_row_data, NULL);
+      g_print("signals disconnected %d\n", number);
+      if(cloud_row)
+        g_signal_connect(l->data, "changed", G_CALLBACK(update_cloud_row_data), cloud_row);
     }
 
   /* go through all connected drives */
@@ -4005,7 +4044,7 @@ gtk_places_sidebar_init (GtkPlacesSidebar *sidebar)
   /* Cloud providers */
   sidebar->cloud_manager = cloud_provider_manager_dup_singleton ();
   g_signal_connect_swapped (sidebar->cloud_manager,
-                            "changed",
+                            "owners-changed",
                             G_CALLBACK (update_places),
                             sidebar);
   cloud_provider_manager_update (sidebar->cloud_manager);

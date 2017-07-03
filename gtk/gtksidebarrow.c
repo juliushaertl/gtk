@@ -359,7 +359,26 @@ gtk_sidebar_row_set_icon (GtkSidebarRow *self,
         gtk_image_clear (GTK_IMAGE (self->left_icon_widget));
 
       g_object_notify_by_pspec (G_OBJECT (self), properties [PROP_LEFT_ICON]);
-	    //FIXME: right icon
+    }
+}
+
+void
+gtk_sidebar_row_set_right_icon (GtkSidebarRow *self,
+                                GIcon         *icon)
+{
+  g_return_if_fail (GTK_IS_SIDEBAR_ROW (self));
+
+  if (self->right_icon != icon)
+    {
+      g_set_object (&self->right_icon, icon);
+      if (self->right_icon != NULL)
+        gtk_image_set_from_gicon (GTK_IMAGE (self->right_icon_widget), self->right_icon,
+                                  GTK_ICON_SIZE_MENU);
+      else
+        if (self->right_icon_widget != NULL)
+          gtk_image_clear (GTK_IMAGE (self->right_icon_widget));
+
+      g_object_notify_by_pspec (G_OBJECT (self), properties [PROP_RIGHT_ICON]);
     }
 }
 
