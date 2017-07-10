@@ -153,6 +153,8 @@ struct _GtkPlacesSidebar {
   DropState drop_state;
   GtkGesture *long_press_gesture;
 
+  GList *cloud_rows;
+
   /* volume mounting - delayed open process */
   GtkPlacesOpenFlags go_to_after_mount_open_flags;
   GCancellable *cancellable;
@@ -915,23 +917,23 @@ update_cloud_row_data(CloudProvider *cloud_provider,
   GIcon *right_icon;
   gint provider_status;
   provider_status = cloud_provider_get_status (cloud_provider);
-      switch (provider_status)
-        {
-        case CLOUD_PROVIDER_STATUS_IDLE:
-          right_icon = NULL;
-          break;
+  switch (provider_status)
+    {
+      case CLOUD_PROVIDER_STATUS_IDLE:
+        right_icon = NULL;
+        break;
 
-        case CLOUD_PROVIDER_STATUS_SYNCING:
-          right_icon = g_themed_icon_new ("emblem-synchronizing-symbolic");
-          break;
+      case CLOUD_PROVIDER_STATUS_SYNCING:
+        right_icon = g_themed_icon_new ("emblem-synchronizing-symbolic");
+        break;
 
-        case CLOUD_PROVIDER_STATUS_ERROR:
-          right_icon = g_themed_icon_new ("dialog-warning-symbolic");
-          break;
+      case CLOUD_PROVIDER_STATUS_ERROR:
+        right_icon = g_themed_icon_new ("dialog-warning-symbolic");
+        break;
 
-        default:
-          return;
-        }
+      default:
+        return;
+    }
   gtk_sidebar_row_set_right_icon(GTK_SIDEBAR_ROW(cloud_row), right_icon);
   if(right_icon != NULL)
     g_object_unref(right_icon);
@@ -939,6 +941,24 @@ update_cloud_row_data(CloudProvider *cloud_provider,
                 "label", cloud_provider_get_name(cloud_provider),
                 NULL);
 
+}
+
+void
+cloud_row_destroy (GtkWidget *object,
+               gpointer   user_data)
+{
+  GtkPlacesSidebar *sidebar = GTK_PLACES_SIDEBAR(user_data);
+  CloudProvider *cloud_provider = NULL;
+  g_object_get(GTK_SIDEBAR_ROW(object), "cloud-provider", &cloud_provider, NULL);
+  if(cloud_provider != NULL)
+    {
+      g_signal_handlers_disconnect_matched (cloud_provider,
+                                            G_SIGNAL_MATCH_DATA,
+                                            0, 0, 0, update_cloud_row_data, object);
+      g_object_unref(object);
+      g_object_unref(cloud_provider);
+    }
+  sidebar->cloud_rows = g_list_remove(sidebar->cloud_rows, object);
 }
 
 static void
@@ -1099,14 +1119,11 @@ update_places (GtkPlacesSidebar *sidebar)
                                NULL, NULL, NULL, l->data, 0,
                                tooltip);
 
-      // FIXME: store handler_ids in list for each instance of gtkplacessidebar
-      // otherwise it will just work on the newest one
-      guint number = g_signal_handlers_disconnect_matched (l->data,
-                                            G_SIGNAL_MATCH_FUNC,
-                                            0, 0, 0, update_cloud_row_data, NULL);
-      g_print("signals disconnected %d\n", number);
-      if(cloud_row)
-        g_signal_connect(l->data, "changed", G_CALLBACK(update_cloud_row_data), cloud_row);
+      g_signal_connect(l->data, "changed", G_CALLBACK(update_cloud_row_data), cloud_row);
+      g_signal_connect (cloud_row, "destroy", G_CALLBACK(cloud_row_destroy), sidebar);
+      g_object_ref(cloud_row);
+      g_object_ref(l->data);
+      sidebar->cloud_rows = g_list_append(sidebar->cloud_rows, cloud_row);
     }
 
   /* go through all connected drives */
@@ -4042,6 +4059,7 @@ gtk_places_sidebar_init (GtkPlacesSidebar *sidebar)
   sidebar->show_desktop = show_desktop;
 
   /* Cloud providers */
+  sidebar->cloud_rows = NULL;
   sidebar->cloud_manager = cloud_provider_manager_dup_singleton ();
   g_signal_connect_swapped (sidebar->cloud_manager,
                             "owners-changed",
