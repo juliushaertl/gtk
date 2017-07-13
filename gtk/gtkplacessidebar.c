@@ -25,7 +25,7 @@
 
 #include <gio/gio.h>
 #include <cloudproviders/cloudprovidermanager.h>
-#include <cloudproviders/cloudprovider.h>
+#include <cloudproviders/cloudproviderproxy.h>
 
 #include "gtkplacessidebarprivate.h"
 #include "gtksidebarrowprivate.h"
@@ -458,7 +458,7 @@ add_place (GtkPlacesSidebar            *sidebar,
            GDrive                      *drive,
            GVolume                     *volume,
            GMount                      *mount,
-           CloudProvider            *cloud_provider,
+           CloudProviderProxy          *cloud_provider_proxy,
            const gint                   index,
            const gchar                 *tooltip)
 {
@@ -490,7 +490,7 @@ add_place (GtkPlacesSidebar            *sidebar,
                       "drive", drive,
                       "volume", volume,
                       "mount", mount,
-                      "cloud-provider", cloud_provider,
+                      "cloud-provider", cloud_provider_proxy,
                       NULL);
 
   eject_button = gtk_sidebar_row_get_eject_button (GTK_SIDEBAR_ROW (row));
@@ -911,12 +911,12 @@ update_trash_icon (GtkPlacesSidebar *sidebar)
 }
 
 static void
-update_cloud_row_data(CloudProvider *cloud_provider,
-                      GtkWidget *cloud_row)
+cloud_row_update(CloudProviderProxy *cloud_provider_proxy,
+                 GtkWidget *cloud_row)
 {
   GIcon *right_icon;
   gint provider_status;
-  provider_status = cloud_provider_get_status (cloud_provider);
+  provider_status = cloud_provider_proxy_get_status (cloud_provider_proxy);
   switch (provider_status)
     {
       case CLOUD_PROVIDER_STATUS_IDLE:
@@ -934,29 +934,31 @@ update_cloud_row_data(CloudProvider *cloud_provider,
       default:
         return;
     }
+
   gtk_sidebar_row_set_right_icon(GTK_SIDEBAR_ROW(cloud_row), right_icon);
   if(right_icon != NULL)
     g_object_unref(right_icon);
+
   g_object_set (cloud_row,
-                "label", cloud_provider_get_name(cloud_provider),
+                "label", cloud_provider_proxy_get_name(cloud_provider_proxy),
                 NULL);
 
 }
 
 void
 cloud_row_destroy (GtkWidget *object,
-               gpointer   user_data)
+                   gpointer   user_data)
 {
   GtkPlacesSidebar *sidebar = GTK_PLACES_SIDEBAR(user_data);
-  CloudProvider *cloud_provider = NULL;
-  g_object_get(GTK_SIDEBAR_ROW(object), "cloud-provider", &cloud_provider, NULL);
-  if(cloud_provider != NULL)
+  CloudProviderProxy *cloud_provider_proxy = NULL;
+  g_object_get(GTK_SIDEBAR_ROW(object), "cloud-provider", &cloud_provider_proxy, NULL);
+  if(cloud_provider_proxy != NULL)
     {
-      g_signal_handlers_disconnect_matched (cloud_provider,
+      g_signal_handlers_disconnect_matched (cloud_provider_proxy,
                                             G_SIGNAL_MATCH_DATA,
-                                            0, 0, 0, update_cloud_row_data, object);
+                                            0, 0, 0, cloud_row_update, object);
       g_object_unref(object);
-      g_object_unref(cloud_provider);
+      g_object_unref(cloud_provider_proxy);
     }
   sidebar->cloud_rows = g_list_remove(sidebar->cloud_rows, object);
 }
@@ -981,7 +983,7 @@ update_places (GtkPlacesSidebar *sidebar)
   gchar *tooltip;
   GList *network_mounts, *network_volumes;
   GIcon *new_bookmark_icon;
-  GList *cloud_providers;
+  GList *cloud_provider_proxys;
   guint provider_status;
   GtkStyleContext *context;
 
@@ -1079,17 +1081,17 @@ update_places (GtkPlacesSidebar *sidebar)
   add_application_shortcuts (sidebar);
 
   /* Cloud providers */
-  cloud_providers = cloud_provider_manager_get_providers (sidebar->cloud_manager);
-  for (l = cloud_providers; l != NULL; l = l->next)
+  cloud_provider_proxys = cloud_provider_manager_get_providers (sidebar->cloud_manager);
+  for (l = cloud_provider_proxys; l != NULL; l = l->next)
     {
-      left_icon = cloud_provider_get_icon (l->data);
-      name = cloud_provider_get_name (l->data);
-      provider_status = cloud_provider_get_status (l->data);
-      mount_uri = g_strconcat("file://", cloud_provider_get_path(l->data), NULL);
+      left_icon = cloud_provider_proxy_get_icon (l->data);
+      name = cloud_provider_proxy_get_name (l->data);
+      provider_status = cloud_provider_proxy_get_status (l->data);
+      mount_uri = g_strconcat("file://", cloud_provider_proxy_get_path(l->data), NULL);
       if (left_icon == NULL
-	  || name == NULL
-	  || provider_status == CLOUD_PROVIDER_STATUS_INVALID
-	  || mount_uri == NULL)
+          || name == NULL
+          || provider_status == CLOUD_PROVIDER_STATUS_INVALID
+          || mount_uri == NULL)
         continue;
 
       switch (provider_status)
@@ -1119,11 +1121,11 @@ update_places (GtkPlacesSidebar *sidebar)
                                NULL, NULL, NULL, l->data, 0,
                                tooltip);
 
-      g_signal_connect(l->data, "changed", G_CALLBACK(update_cloud_row_data), cloud_row);
+      g_signal_connect (l->data, "changed", G_CALLBACK(cloud_row_update), cloud_row);
       g_signal_connect (cloud_row, "destroy", G_CALLBACK(cloud_row_destroy), sidebar);
-      g_object_ref(cloud_row);
-      g_object_ref(l->data);
-      sidebar->cloud_rows = g_list_append(sidebar->cloud_rows, cloud_row);
+      g_object_ref (cloud_row);
+      g_object_ref (l->data);
+      sidebar->cloud_rows = g_list_append (sidebar->cloud_rows, cloud_row);
     }
 
   /* go through all connected drives */
@@ -3517,23 +3519,23 @@ static void
 build_popup_menu_using_gmenu (GtkSidebarRow *row)
 {
   // FIXME: integrate to create_row_popover so we have the default open actions
-  CloudProvider *cloud_provider;
+  CloudProviderProxy *cloud_provider_proxy;
   GtkPlacesSidebar *sidebar;
   GMenuModel *cloud_provider_menu;
   GActionGroup *cloud_provider_action_group;
 
   g_object_get (row,
                 "sidebar", &sidebar,
-                "cloud-provider", &cloud_provider,
+                "cloud-provider", &cloud_provider_proxy,
                 NULL);
 
   sidebar->menu_selected_row = row;
 
   /* Cloud provider */
-  if (cloud_provider)
+  if (cloud_provider_proxy)
     {
-      cloud_provider_menu = cloud_provider_get_menu_model (cloud_provider);
-      cloud_provider_action_group = cloud_provider_get_action_group (cloud_provider);
+      cloud_provider_menu = cloud_provider_proxy_get_menu_model (cloud_provider_proxy);
+      cloud_provider_action_group = cloud_provider_proxy_get_action_group (cloud_provider_proxy);
       gtk_widget_insert_action_group (GTK_WIDGET (sidebar),
                                       "cloudprovider",
                                       G_ACTION_GROUP (cloud_provider_action_group));
@@ -3553,11 +3555,11 @@ create_row_popover (GtkPlacesSidebar *sidebar,
 {
   PopoverData data;
   GtkWidget *box;
-  CloudProvider *cloud_provider;
+  CloudProviderProxy *cloud_provider_proxy;
 
-  g_object_get (row, "cloud-provider", &cloud_provider, NULL);
+  g_object_get (row, "cloud-provider", &cloud_provider_proxy, NULL);
 
-  if (cloud_provider) {
+  if (cloud_provider_proxy) {
     build_popup_menu_using_gmenu (row);
     return;
   }

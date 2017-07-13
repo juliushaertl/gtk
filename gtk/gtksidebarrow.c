@@ -26,7 +26,7 @@
 #include "gtkstylecontext.h"
 #include "gtkrevealer.h"
 #include "gtkselection.h"
-#include <cloudproviders/cloudprovider.h>
+#include <cloudproviders/cloudproviderproxy.h>
 
 struct _GtkSidebarRow
 {
@@ -531,9 +531,9 @@ gtk_sidebar_row_class_init (GtkSidebarRowClass *klass)
 
   properties [PROP_CLOUD_PROVIDER] =
     g_param_spec_object ("cloud-provider",
-                         "CloudProvider",
-                         "CloudProvider",
-                         TYPE_CLOUD_PROVIDER,
+                         "CloudProviderProxy",
+                         "CloudProviderProxy",
+                         TYPE_CLOUD_PROVIDER_PROXY,
                          (G_PARAM_READWRITE |
                           G_PARAM_STATIC_STRINGS));
 
