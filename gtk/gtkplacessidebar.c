@@ -24,7 +24,7 @@
 #include "config.h"
 
 #include <gio/gio.h>
-#include <cloudproviders/cloudprovidermanager.h>
+#include <cloudproviders/cloudproviders.h>
 #include <cloudproviders/cloudproviderproxy.h>
 
 #include "gtkplacessidebarprivate.h"
@@ -123,7 +123,7 @@ struct _GtkPlacesSidebar {
   GtkWidget *new_bookmark_row;
 
   GtkBookmarksManager     *bookmarks_manager;
-  CloudProviderManager *cloud_manager;
+  CloudProviders *cloud_manager;
   GVolumeMonitor    *volume_monitor;
   GtkTrashMonitor   *trash_monitor;
   GtkSettings       *gtk_settings;
@@ -1081,7 +1081,7 @@ update_places (GtkPlacesSidebar *sidebar)
   add_application_shortcuts (sidebar);
 
   /* Cloud providers */
-  cloud_provider_proxys = cloud_provider_manager_get_providers (sidebar->cloud_manager);
+  cloud_provider_proxys = cloud_providers_get_providers (sidebar->cloud_manager);
   for (l = cloud_provider_proxys; l != NULL; l = l->next)
     {
       left_icon = cloud_provider_proxy_get_icon (l->data);
@@ -4062,12 +4062,12 @@ gtk_places_sidebar_init (GtkPlacesSidebar *sidebar)
 
   /* Cloud providers */
   sidebar->cloud_rows = NULL;
-  sidebar->cloud_manager = cloud_provider_manager_dup_singleton ();
+  sidebar->cloud_manager = cloud_providers_dup_singleton ();
   g_signal_connect_swapped (sidebar->cloud_manager,
                             "owners-changed",
                             G_CALLBACK (update_places),
                             sidebar);
-  cloud_provider_manager_update (sidebar->cloud_manager);
+  cloud_providers_update (sidebar->cloud_manager);
 
   /* populate the sidebar */
   update_places (sidebar);
