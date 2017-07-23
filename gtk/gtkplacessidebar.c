@@ -942,6 +942,9 @@ cloud_row_update(CloudProviderProxy *cloud_provider_proxy,
   g_object_set (cloud_row,
                 "label", cloud_provider_proxy_get_name(cloud_provider_proxy),
                 NULL);
+  g_object_set (cloud_row,
+                "tooltip", cloud_provider_proxy_get_status_details(cloud_provider_proxy),
+                NULL);
 
 }
 
