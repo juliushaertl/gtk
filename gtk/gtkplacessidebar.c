@@ -1090,13 +1090,13 @@ update_places (GtkPlacesSidebar *sidebar)
       left_icon = cloud_provider_proxy_get_icon (l->data);
       name = cloud_provider_proxy_get_name (l->data);
       provider_status = cloud_provider_proxy_get_status (l->data);
-      mount_uri = g_strconcat("file://", cloud_provider_proxy_get_path(l->data), NULL);
+      mount_uri = cloud_provider_proxy_get_path(l->data);
       if (left_icon == NULL
           || name == NULL
           || provider_status == CLOUD_PROVIDER_STATUS_INVALID
           || mount_uri == NULL)
         continue;
-
+      mount_uri = g_strconcat("file://", cloud_provider_proxy_get_path(l->data), NULL);
       switch (provider_status)
         {
         case CLOUD_PROVIDER_STATUS_IDLE:
