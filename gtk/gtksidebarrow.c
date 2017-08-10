@@ -47,7 +47,7 @@ struct _GtkSidebarRow
   GDrive *drive;
   GVolume *volume;
   GMount *mount;
-  CloudProvider *cloud_provider;
+  CloudProviderProxy *cloud_provider;
   gboolean placeholder;
   GtkPlacesSidebar *sidebar;
   GtkWidget *event_box;
