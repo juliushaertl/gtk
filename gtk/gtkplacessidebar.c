@@ -3521,7 +3521,6 @@ on_row_popover_destroy (GtkWidget        *row_popover,
 static void
 build_popup_menu_using_gmenu (GtkSidebarRow *row)
 {
-  // FIXME: integrate to create_row_popover so we have the default open actions
   CloudProviderProxy *cloud_provider_proxy;
   GtkPlacesSidebar *sidebar;
   GMenuModel *cloud_provider_menu;
@@ -3555,12 +3554,14 @@ build_popup_menu_using_gmenu (GtkSidebarRow *row)
                                       "cloudprovider",
                                       G_ACTION_GROUP (cloud_provider_action_group));
       add_actions(sidebar);
-      if(sidebar->popover) {
-        sidebar->popover = NULL;
-      }
+      if (sidebar->popover)
+        gtk_widget_destroy (sidebar->popover);
+
       sidebar->popover = gtk_popover_new_from_model (GTK_WIDGET(sidebar),
      						     G_MENU_MODEL (menu));
       g_signal_connect (sidebar->popover, "destroy", G_CALLBACK (on_row_popover_destroy), sidebar);
+      g_object_unref (sidebar);
+      g_object_unref (cloud_provider_proxy);
     }
 }
 
